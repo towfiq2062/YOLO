@@ -1,0 +1,55 @@
+#THis makes the YOLO prediction (class) with custom text plot
+
+
+import matplotlib.pyplot as plt
+import cv2 
+import os
+
+import os
+import csv
+from ultralytics import YOLO
+
+# Define paths
+model_path = '/mnt/nrdstor/amilab/towfiqami/video/best.pt'
+
+source_dir = '/mnt/nrdstor/amilab/towfiqami/video/Video-Frames-4-16/'
+
+
+# Initialize the model
+model = YOLO(model_path)
+
+# Perform predictions
+results = model.predict(source=source_dir,stream=True, save_txt=True,exist_ok=True, name="predict3", save=False)# rect=True,
+
+output_dir = "./runs/classify/predict3/outputs" 
+os.makedirs(output_dir, exist_ok=True)
+
+# Font settings
+font = cv2.FONT_HERSHEY_SIMPLEX
+font_scale = 0.5 
+color = (0, 0, 0)  # White text
+thickness = 1
+line_height = 15  # Vertical spacing between lines
+
+# Starting position
+x, y = 325, 30
+
+for re in results: 
+    x, y = 325, 300
+    orig_img= re.orig_img
+    image = orig_img.copy()
+    cv2.rectangle(image, (x, y-20), (x+100, y+70), (255, 255, 255), 
+                  thickness=-1)
+    labels = re.probs
+    i=0
+    for label_id, conf in zip(labels.top5, labels.top5conf):
+        file_name = re.path.split(os.sep)[-1] 
+        txt_to_write = str(model.names[label_id])+ f" {conf.item():.2f}" 
+        position = (x, y + i * line_height)
+        cv2.putText(image, txt_to_write, position, font, 
+                    font_scale, color, thickness, cv2.LINE_AA)
+        i+=1 
+    cv2.imwrite(os.path.join(output_dir, file_name), image)
+plt.imshow(image)
+plt.show()
+# del orig_img
