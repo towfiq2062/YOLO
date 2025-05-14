@@ -1,0 +1,51 @@
+#This code takes depth data as input and makes jet colormap images
+import numpy as np
+import cv2
+import shutil
+
+# source and destination dir
+source_dir = r"C:\Users\mrahman8\Downloads\condition_score_categorized\condition_score_categorized"
+destination_dir = r"C:\Users\mrahman8\Downloads\condition_score_colorized"
+
+# Function to create directory structure into the destination folder
+def create_dest_dir_structure(src_dir, dest_dir):
+    for dirpath, dirnames, filenames in os.walk(src_dir):
+        # Create the corresponding destination directory structure
+        relative_path = os.path.relpath(dirpath, source_dir)
+        dest_subdir = os.path.join(dest_dir, relative_path)
+        os.makedirs(dest_subdir, exist_ok=True)
+
+# Creating the destination folder structure by OS-walking through the source directory
+create_dest_dir_structure(source_dir, destination_dir)
+
+# Loop through all files in the source (also subdirectories)
+for dirpath, dirnames, filenames in os.walk(source_dir):
+    for filename in filenames:
+        # Check if the file is a .txt (depth data) file
+        if filename.endswith(".txt"):
+            # Get the full path of the current depth data file
+            file_path = os.path.join(dirpath, filename)
+            
+            # Load depth data from the file
+            depth_data = np.loadtxt(file_path, delimiter=',')
+            
+            # Apply thresholding to depth data
+            depth_data[np.logical_or(depth_data < 1500, depth_data > 2700)] = 0
+            
+            # Normalize depth data to the range [0, 1]
+            depth_normalized = 1 - np.clip((depth_data - 1500) / (2700 - 1500), 0, 1)
+            
+            # Apply a color map (JET) to the normalized depth data
+            colorized_depth = cv2.applyColorMap((depth_normalized * 255).astype(np.uint8), cv2.COLORMAP_JET)
+            
+            # Generate the destination file path (keeping the same folder structure)
+            relative_path = os.path.relpath(dirpath, source_dir)
+            dest_subdir = os.path.join(destination_dir, relative_path)
+            os.makedirs(dest_subdir, exist_ok=True)
+            
+            dest_filename = os.path.splitext(filename)[0] + "_colorized.png"
+            dest_filepath = os.path.join(dest_subdir, dest_filename)
+            
+            # Save the colorized depth image
+            cv2.imwrite(dest_filepath, colorized_depth)
+            print(f"Saved: {dest_filepath}")
